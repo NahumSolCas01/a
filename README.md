@@ -8,13 +8,13 @@
 #include <2416_Nahum.c>
 
 #byte    RCSTA1=0XFAB
-                                                ////
-#define  LCD_ENABLE_PIN PIN_E2                                                 ////
-#define  LCD_RS_PIN     PIN_E0                                                     ////
-#define  LCD_RW_PIN     PIN_E1                                                      ////////     
-#define  LCD_DATA4      PIN_B4                                                     ////
-#define  LCD_DATA5      PIN_B5                                                        ////   
-#define  LCD_DATA6      PIN_B6                                                         ////
+                                                
+#define  LCD_ENABLE_PIN PIN_E2                                                
+#define  LCD_RS_PIN     PIN_E0                                                     
+#define  LCD_RW_PIN     PIN_E1                                                           
+#define  LCD_DATA4      PIN_B4                                                     
+#define  LCD_DATA5      PIN_B5                                                           
+#define  LCD_DATA6      PIN_B6                                                         
 #define  LCD_DATA7      PIN_B7
 
 
@@ -37,7 +37,10 @@
 #define  C4    PIN_D7
 #define  ENL   PIN_A0
 
+void PRINTLCD ();
 void LIMPIA_BUFFER ();
+void Direc ();
+void SendData ();
 void comando ( int );
 int x=0;
 int8 teclado ( void );
@@ -48,11 +51,13 @@ int dir3 = 0;
 int reb2[2];
 int lcd[16];
 int com[3];
+int send[16];
 int i = 0 ;
 int y = 0;
 int j = 0;
 int r=1;
 int a=0;
+int t=0;
 
 int8 data=0;
 int reb[3];
@@ -68,93 +73,17 @@ void main (void){
    //output_c(0);
    for ( ; ; ){
       output_low(ENL);
-      
-      //RECIBIR DATOS OPCI N 2
-      
-      
-     LIMPIA_BUFFER();
-      if(reb[0]==0x30 || reb[0]==0x32){
-         switch(reb[1])
-         {
-            case 0x31: //RELE
-               if(reb[2]==0x30){
-                  output_low (RELE);
-               }
-               if(reb[2]==0x31){
-                  output_high (RELE);
-               }
-               break;
-               
-            case 0x32: //GRN
-               if(reb[2]==0x30){
-                  output_low (GRN);
-               }
-               if(reb[2]==0x31){
-                  output_high (GRN);
-               }
-               break;
-               
-            case 0x34: //BLU
-               if(reb[2]==0x30){
-                  output_low (BLU);
-               }
-               if(reb[2]==0x31){
-                  output_high (BLU);
-               }
-               break;
-               
-            case 0x38: //RED
-               if(reb[2]==0x30){
-                  output_low (RED);
-               }
-               if(reb[2]==0x31){
-                  output_high (RED);
-               }
-               break; 
-               
-            case 0x43: //LCD
-               reb[2]=lcd[j];
-                  
-                  lcd_gotoxy(r,2);
-                  printf(lcd_putc,"%c",lcd[j]);
-                  r++;
-                  j++;
-                  if(r>15){
-                     r=1; 
-                  }
-              
-             
-               break;
-               default:
-         }
-      }
+      //RECIBIR DATOS
+      PRINTLCD ();
+      //Limpiamos el Buffer
+      LIMPIA_BUFFER();
+      //Distribución de Datos
+      Direc ();
+      //RECIBIR TECLADO
+      //MANDAR DATOS 
+      SendData ();
+      //MANDAR MENSAJE AL LCD
          
-         data=teclado();
-         
-         if (data != 0x10){
-            while(teclado()!=0x10);
-            com[i]=data;
-            
-            lcd_gotoxy(1,1);
-            printf(lcd_putc,"  Dato:   %x   ",com[i]);
-            lcd_gotoxy(1,2);
-            printf(lcd_putc,"  %x   %x   %x  ",com[0],com[1],com[2]);
-            i++;
-            LIMPIA_BUFFER();
-            if(i==3){
-               i=0;
-              
-               OUTPUT_HIGH(ENL);
-               delay_ms(100);
-               for (y=0;y<3;y++){
-                  putc(com[y]);
-                  delay_ms(100);
-               }
-               
-            }
-            
-            
-         } 
    }  
 }      
    
@@ -324,9 +253,7 @@ void LIMPIA_BUFFER ( void ){
    }
 }
 
-
-
-Void PRINTLCD (void){
+void PRINTLCD (void){
    do{
       if((reb[0]==0x30||reb[0]==0x32) && reb[1]==0x43){
          if(kbhit()){
@@ -346,7 +273,7 @@ Void PRINTLCD (void){
 void RECEP (void){
    if (kbhit()){
       reb[x]=getc();
-      if(reb[x]>=30 && reb[x]<0x44){
+      if(reb[x]>=30 && reb[x]<0x45){
          lcd_gotoxy(1,1);
          printf(lcd_putc, "SAVE :%x  ",reb[x]);
          delay_ms(500);
@@ -355,6 +282,105 @@ void RECEP (void){
       }
       if (x>2){
          x=0;    
+      }
+   }
+}
+
+void Direc (void){
+   if(reb[0]==0x30 || reb[0]==0x32){
+      switch(reb[1]){
+         case 0x31: //RELE
+            if(reb[2]==0x30){
+               output_low (RELE);
+            }
+            if(reb[2]==0x31){
+               output_high (RELE);
+            }
+         break;
+               
+         case 0x32: //GRN
+            if(reb[2]==0x30){
+               output_low (GRN);
+            }
+            if(reb[2]==0x31){
+               output_high (GRN);
+            }
+         break;
+               
+         case 0x34: //BLU
+            if(reb[2]==0x30){
+               output_low (BLU);
+            }
+            if(reb[2]==0x31){
+               output_high (BLU);
+            }
+         break;
+               
+         case 0x38: //RED
+            if(reb[2]==0x30){
+               output_low (RED);
+            }
+            if(reb[2]==0x31){
+               output_high (RED);
+            }
+         break; 
+         default:
+      }
+   }
+}
+
+void SendData (void){
+   data=teclado();
+   if (data != 0x10){
+      while(teclado()!=0x10);
+      com[i]=data;
+      lcd_gotoxy(1,1);
+      printf(lcd_putc,"  Dato:   %x   ",com[i]);
+      lcd_gotoxy(1,2);
+      printf(lcd_putc,"  %x   %x   %x  ",com[0],com[1],com[2]);
+      i++;
+      LIMPIA_BUFFER();
+      if(i==3){
+         i=0;
+         OUTPUT_HIGH(ENL);
+         delay_ms(100);
+         for (y=0;y<3;y++){
+            putc(com[y]);
+            delay_ms(100);
+         }
+      }
+   } 
+}
+
+void LCDMESSAGE (void){
+   //Entra
+   if((com[0]==0x30||com[0]==0x32)&&com[1]==0x43){
+      lcd_gotoxy(1,1);
+      prinf(lcd_putc, "Mensaje a Mandar");
+      //Se ejecuta mientras t sea menor a 16
+      while(t<16){
+         //la posición 2 del vector de transmisión lo igualamos al vector del lcd
+         com[2]=send[t];
+         //Cuando el teclado sea diferente a 0x10 entra
+         if (data != 0x10){
+            //trampa 
+            while(teclado()!=0x10);
+            //Igualamos el vector del lcd
+            send[t]=data;
+            lcd_gotoxy(r,2);
+            prinf(lcd_putc, "%c",send[t]);
+            r++;
+            t++;
+            
+            LIMPIA_BUFFER();
+            if(t==16 && r==17){
+               t=0;
+               r=1;
+               OUTPUT_HIGH(ENL);
+               delay_ms(100);
+               putc(com[2]);
+            }
+         }
       }
    }
 }
