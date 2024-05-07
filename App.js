@@ -1,5 +1,4 @@
 import { StyleSheet, Text, View, ImageBackground, Button, Image } from 'react-native';
-goal
 import React, {useState} from 'react';
 import {Dimensions} from 'react-native';
 
